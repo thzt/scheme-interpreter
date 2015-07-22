@@ -15,7 +15,7 @@
 (define (self-eval-exp? exp)
   (or (number? exp) (boolean? exp)))
 (define (special-form? exp)
-  (member (car exp) '(if define set!)))
+  (member (car exp) '(if define set! lambda)))
 
 (define (eval-symbol sym env)
   (let lookup
@@ -51,13 +51,17 @@
   (eq? (car exp) 'lambda))
 
 (define (eval-if exp env)
-  1)
+  (if (eval-exp (cadr exp) env)
+      (eval-exp (caddr exp) env)
+      (eval-exp (cadddr exp) env)))
 (define (eval-define exp env)
-  2)
+  (set! *top-level-frame*
+	(add-to-frame *top-level-frame* 
+		      (cadr exp) (eval-exp (caddr exp) env))))
 (define (eval-set! exp env)
   3)
 (define (eval-lambda exp env)
-  4)
+  (make-closure exp env))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 					;tools
@@ -75,10 +79,34 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 					;scope related
 
-(define *top-level-env* '())
+(define *top-level-frame* '())
 
 (define (extend-env frame env)
   (cons frame env))
 
 (define (add-to-frame frame key value)
   (cons (cons key value) frame))
+
+(define (make-closure proc env)
+  (cons proc env))
+
+(define (get-closure-body closure)
+  (let ((proc (car closure)))
+    (caddr proc)))
+
+(define (get-closure-param closure)
+  (let ((proc (car closure)))
+    (cadr proc)))
+
+(define (get-closure-env closure)
+  (cdr closure))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+					;test
+
+(eval-exp '(if #t 1 2) '())
+(eval-exp '(define a 1) '())
+(eval-exp '(set!) '())
+(eval-exp '(lambda) '())
+
+*top-level-frame*
