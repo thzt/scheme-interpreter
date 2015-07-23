@@ -1,122 +1,164 @@
 (library (utility eval)
-	 (export eval-exp *env*)
+	 (export eval-exp *env* *cont*)
 	 (import (rnrs) (utility tool) (utility scope))
 	 
 	 ;export
 
 	 (define *env* `(,(create-frame)))
+	 
+	 (define *cont* (lambda (x) (display x)))
 
-	 (define (eval-exp exp env)
-	   (handle-tree `(
-			  (,is-symbol? ,eval-symbol)
-			  (,self-eval-exp? ,eval-self-eval-exp)
-			  (,is-list?
-			   ((,special-form-list?
-			     ((,is-if? ,eval-if)
-			      (,is-define? ,eval-define)
-			      (,is-set!? ,eval-set!)
-			      (,is-lambda? ,eval-lambda)
-			      (,is-plus? ,eval-plus)
-			      (,is-minus? ,eval-minus)))
-			    (,function-call-list? ,eval-function-call-list))))
-			exp env))
+	 (define (eval-exp exp env cont)
+	   (handle-tree 
+	    `((,is-symbol? ,eval-symbol)
+	      (,self-eval-exp? ,eval-self-eval-exp)
+	      (,is-continuation? ,eval-continuation)
+	      (,is-list?
+	       ((,special-form-list?
+		 ((,is-if? ,eval-if)
+		  (,is-define? ,eval-define)
+		  (,is-set!? ,eval-set!)
+		  (,is-lambda? ,eval-lambda)
+		  (,is-plus? ,eval-plus)
+		  (,is-minus? ,eval-minus)
+		  (,is-call/cc? ,eval-call/cc)))
+		(,is-continuation-call? ,eval-continuation-call)
+		(,function-call-list? ,eval-function-call-list))))
+	    exp env cont))
 
 	 ;private region
 
-	 (define (is-symbol? exp)
+	 (define (is-symbol? exp env cont)
 	   (display "is-symbol?\n")
-	   (symbol? exp))
+	   (cont (symbol? exp)))
 
-	 (define (eval-symbol exp env)
+	 (define (eval-symbol exp env cont)
 	   (display "eval-symbol\n")
-	   (get-symbol-value-from-env env exp))
+	   (cont (get-symbol-value-from-env env exp)))
 
-	 (define (self-eval-exp? exp)
+	 (define (self-eval-exp? exp env cont)
 	   (display "self-eval-exp?\n")
-	   (or (number? exp) (boolean? exp)))
+	   (cont (or (number? exp) (boolean? exp))))
 
-	 (define (eval-self-eval-exp exp env)
+	 (define (eval-self-eval-exp exp env cont)
 	   (display "eval-self-eval-exp\n")
-	   exp)
+	   (cont exp))
 
-	 (define (is-list? exp)
+	 (define (is-continuation? exp env cont)
+	   (display "is-continuation?\n")
+	   (cont (continuation? exp)))
+
+	 (define (eval-continuation exp env cont)
+	   (display "eval-continuation\n")
+	   (cont exp))
+
+	 (define (is-list? exp env cont)
 	   (display "is-list?\n")
-	   (list? exp))
+	   (cont (list? exp)))
 
-	 (define (special-form-list? exp)
+	 (define (special-form-list? exp env cont)
 	   (display "special-form-list?\n")
-	   (member (car exp) '(if define set! lambda + -)))
+	   (cont (member (car exp) '(if define set! lambda + - call/cc))))
 
-	 (define (is-if? exp)
+	 (define (is-if? exp env cont)
 	   (display "if?\n")
-	   (eq? (car exp) 'if))
+	   (cont (eq? (car exp) 'if)))
 
-	 (define (eval-if exp env)
+	 (define (eval-if exp env cont)
 	   (display "eval-if\n")
-	   (if (eval-exp (cadr exp) env)
-	       (eval-exp (caddr exp) env)
-	       (eval-exp (cadddr exp) env)))
+	   (eval-exp (cadr exp) env 
+		     (lambda(v)
+		       (if v
+			   (eval-exp (caddr exp) env cont)
+			   (eval-exp (cadddr exp) env cont)))))
 
-	 (define (is-define? exp)
+	 (define (is-define? exp env cont)
 	   (display "define?\n")
-	   (eq? (car exp) 'define))
+	   (cont (eq? (car exp) 'define)))
 
-	 (define (eval-define exp env)
+	 (define (eval-define exp env cont)
 	   (display "eval-define\n")
-	   (extend-env *env* (cadr exp) (eval-exp (caddr exp) env)))
+	   (eval-exp (caddr exp) env
+		     (lambda (v)
+		       (cont (extend-env *env* (cadr exp) v)))))
 
-	 (define (is-set!? exp)
+	 (define (is-set!? exp env cont)
 	   (display "set!?\n")
-	   (eq? (car exp) 'set!))
+	   (cont (eq? (car exp) 'set!)))
 
-	 (define (eval-set! exp env)
+	 (define (eval-set! exp env cont)
 	   (display "eval-set!\n")
-	   (eval-define exp env))
+	   (eval-define exp env cont))
 
-	 (define (is-lambda? exp)
+	 (define (is-lambda? exp env cont)
 	   (display "lambda?\n")
-	   (eq? (car exp) 'lambda))
+	   (cont (eq? (car exp) 'lambda)))
 
-	 (define (eval-lambda exp env)
+	 (define (eval-lambda exp env cont)
 	   (display "eval-lambda?\n")
 	   (let ((params (cadr exp))
 		 (body (caddr exp)))
-	     (make-closure params body env)))
+	     (cont (make-closure params body env))))
 
-	 (define (is-plus? exp)
+	 (define (is-plus? exp env cont)
 	   (display "is-plus?\n")
-	   (eq? (car exp) '+))
+	   (cont (eq? (car exp) '+)))
 
-	 (define (eval-plus exp env)
+	 (define (eval-plus exp env cont)
 	   (display "eval-plus?\n")
-	   (+ (eval-exp (cadr exp) env) 
-	      (eval-exp (caddr exp) env)))
+	   (eval-exp (cadr exp) env
+		     (lambda (v)
+		       (eval-exp (caddr exp) env
+				 (lambda (w)
+				   (cont (+ v w)))))))
 
-	 (define (is-minus? exp)
+	 (define (is-minus? exp env cont)
 	   (display "is-minus?\n")
-	   (eq? (car exp) '-))
+	   (cont (eq? (car exp) '-)))
 
-	 (define (eval-minus exp env)
+	 (define (eval-minus exp env cont)
 	   (display "eval-minus?\n")
-	   (- (eval-exp (cadr exp) env) 
-	      (eval-exp (caddr exp) env)))
+	   (eval-exp (cadr exp) env
+		     (lambda (v)
+		       (eval-exp (caddr exp) env
+				 (lambda (w)
+				   (cont (- v w)))))))
+	 
+	 (define (is-call/cc? exp env cont)
+	   (display "is-call/cc?\n")
+	   (cont (eq? (car exp) 'call/cc)))
 
-	 (define (function-call-list? exp)
+	 (define (eval-call/cc exp env cont)
+	   (display "eval-call/cc\n")
+	   (let ((wrapped-cont (make-continuation cont)))
+	     (eval-lambda (cadr exp) env
+			  (lambda (v)
+			    (eval-function-call-list `(,v ,wrapped-cont) env cont)))))
+
+	 (define (is-continuation-call? exp env cont)
+	   (display "is-continuation-call?\n")
+	   (cont (continuation? 
+		  (get-symbol-value-from-env env (car exp)))))
+	  
+	 (define (eval-continuation-call exp env cont)
+	   (display "eval-continuation-call\n")
+	   (eval-symbol (car exp) env
+			(lambda (v)
+			  (let ((original-cont (continuation-cont v)))
+			    (eval-exp (cadr exp) env
+				      (lambda (v)
+					(original-cont v)))))))
+
+	 (define (function-call-list? exp env cont)
 	   (display "function-call-list?\n")
-	   (closure? (eval-symbol (car exp) *env*)))
+	   (eval-symbol (car exp) *env*
+			(lambda (v)
+			  (cont (closure? v)))))
 
-	 (define (eval-function-call-list exp env)
-	   (display "eval-function-call-list\n")
-	   (let* ((function-name (car exp))
-		  (function-args (map 
-				  (lambda(arg) 
-				    (eval-exp arg env))
-				  (cdr exp)))
-
-		  (closure (eval-symbol function-name env))
-		  (function-body (closure-body closure))
-		  (function-env (closure-env closure))
-		  (function-params (closure-params closure)))
+	 (define (eval-closure closure function-args cont)
+	   (let ((function-body (closure-body closure))
+		 (function-env (closure-env closure))
+		 (function-params (closure-params closure)))
 
 	     (let ((frame (create-frame)))
 	       (let extend
@@ -127,6 +169,25 @@
 		     (begin (extend-frame frame (car params) (car args))
 			    (extend (cdr params) (cdr args)))))
 	       (set! function-env (prepend-frame-to-env function-env frame)))
+	     
+	     (eval-exp function-body function-env
+		       (lambda (v)
+			 (cont v)))))
 
-	     (eval-exp function-body function-env)))
+	 (define (eval-function-call-list exp env cont)
+	   (display "eval-function-call-list\n")
+
+	   (let ((function-name (car exp)))
+	     (callback-reduce (cdr exp)
+			 '()
+			 (lambda (arg next)
+			   (eval-exp arg env
+				     (lambda (v)
+				       (next v))))
+			 (lambda (function-args)
+			   (if (closure? function-name)
+			       (eval-closure function-name function-args cont)
+			       (eval-symbol function-name env
+					    (lambda (closure)
+					      (eval-closure closure function-args cont))))))))
 )

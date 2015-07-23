@@ -1,17 +1,19 @@
 (import (rnrs) (utility eval) (utility scope))
 
-;(eval '(if #t 1 2))
-;(display (eval 'id *env*))
+(eval-exp '(if #t 1 2) *env* *cont*)
 
-(eval-exp '(define add 
-	     (lambda (x)
-	       (lambda (y) (+ x y))))
-	  *env*)
+(eval-exp '(+ 1 2) *env* *cont*)
 
-(eval-exp '(define add1 (add 1))
-	  *env*)
+(eval-exp '(define a 1) *env* *cont*)
 
-(display (eval-exp '(add1 2)
-	  *env*))
+(eval-exp '(define a (lambda (x) x)) *env* *cont*)
+(eval-exp '(a 1) *env* *cont*)
 
-;(display (get-symbol-value-from-env *env* '+))
+(eval-exp '(define add1 (lambda (x) (+ x 1))) *env* *cont*)
+(eval-exp '(add1 2) *env* *cont*)
+
+(eval-exp '(call/cc (lambda (k) 1))
+	  *env* *cont*)
+(eval-exp '(call/cc (lambda (k) (k 2)))
+	  *env* *cont*)
+

@@ -10,7 +10,11 @@
 		 closure?
 		 closure-params
 		 closure-body
-		 closure-env)
+		 closure-env
+
+		 make-continuation
+		 continuation?
+		 continuation-cont)
 	 (import (rnrs))
 
 	 ;frame operation
@@ -40,4 +44,7 @@
 
 	 ;closure
 	 (define-record-type closure (fields params body env))
+
+	 ;continuation
+	 (define-record-type continuation (fields cont))
 )
