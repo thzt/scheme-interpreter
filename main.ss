@@ -11,6 +11,9 @@
 (define (special-form? exp)
   (member (car exp) '(if define set! lambda)))
 
+(define (closure? exp)
+  (eq? (caar exp) 'lambda))
+
 (define (eval-symbol sym env)
   (let lookup
       ((sym sym)
@@ -28,10 +31,14 @@
 (define (eval-special-form exp env)
   (handle-case EVAL-SPECIAL-CASES exp env))
 
+(define (eval-closure exp env)
+  1)
+
 (define EVAL-CASES
   `((,symbol? . ,eval-symbol)
     (,self-eval-exp? . ,eval-self-eval-exp)
-    (,special-form? . ,eval-special-form)))
+    (,special-form? . ,eval-special-form)
+    (,closure? . ,eval-closure)))
 
 					;eval special case
 (define (if? exp)
@@ -57,10 +64,12 @@
 		      (cadr exp) (eval-exp (caddr exp) env))))
 
 (define (eval-set! exp env)
-  3)
+  (display 5))
 
 (define (eval-lambda exp env)
-  (make-closure exp env))
+  (let ((params (cadr exp))
+	(body (caddr exp)))
+    (make-closure params body env)))
 
 (define EVAL-SPECIAL-CASES
   `((,if? . ,eval-if)
@@ -72,9 +81,9 @@
 (define *top-level-frame* '())
 
 					;test
-(eval-exp '(if #t 1 2) '())
-(eval-exp '(define a 1) '())
-(eval-exp '(set!) '())
-(eval-exp '(lambda) '())
+;(eval-exp '(if #t 1 2) '())
+;(eval-exp '(define a 1) '())
+;(eval-exp '(set!) '())
+(eval-exp '((lambda (x) x) 2) '())
 
-(display *top-level-frame*)
+
