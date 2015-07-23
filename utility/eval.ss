@@ -12,10 +12,12 @@
 			  (,self-eval-exp? ,eval-self-eval-exp)
 			  (,is-list?
 			   ((,special-form-list?
-			     ((,if? ,eval-if)
-			      (,define? ,eval-define)
-			      (,set!? ,eval-set!)
-			      (,lambda? ,eval-lambda)))
+			     ((,is-if? ,eval-if)
+			      (,is-define? ,eval-define)
+			      (,is-set!? ,eval-set!)
+			      (,is-lambda? ,eval-lambda)
+			      (,is-plus? ,eval-plus)
+			      (,is-minus? ,eval-minus)))
 			    (,function-call-list? ,eval-function-call-list))))
 			exp env))
 
@@ -43,9 +45,9 @@
 
 	 (define (special-form-list? exp)
 	   (display "special-form-list?\n")
-	   (member (car exp) '(if define set! lambda)))
+	   (member (car exp) '(if define set! lambda + -)))
 
-	 (define (if? exp)
+	 (define (is-if? exp)
 	   (display "if?\n")
 	   (eq? (car exp) 'if))
 
@@ -55,7 +57,7 @@
 	       (eval-exp (caddr exp) env)
 	       (eval-exp (cadddr exp) env)))
 
-	 (define (define? exp)
+	 (define (is-define? exp)
 	   (display "define?\n")
 	   (eq? (car exp) 'define))
 
@@ -63,7 +65,7 @@
 	   (display "eval-define\n")
 	   (extend-env *env* (cadr exp) (eval-exp (caddr exp) env)))
 
-	 (define (set!? exp)
+	 (define (is-set!? exp)
 	   (display "set!?\n")
 	   (eq? (car exp) 'set!))
 
@@ -71,7 +73,7 @@
 	   (display "eval-set!\n")
 	   (eval-define exp env))
 
-	 (define (lambda? exp)
+	 (define (is-lambda? exp)
 	   (display "lambda?\n")
 	   (eq? (car exp) 'lambda))
 
@@ -81,8 +83,26 @@
 		 (body (caddr exp)))
 	     (make-closure params body env)))
 
+	 (define (is-plus? exp)
+	   (display "is-plus?\n")
+	   (eq? (car exp) '+))
+
+	 (define (eval-plus exp env)
+	   (display "eval-plus?\n")
+	   (+ (eval-exp (cadr exp) env) 
+	      (eval-exp (caddr exp) env)))
+
+	 (define (is-minus? exp)
+	   (display "is-minus?\n")
+	   (eq? (car exp) '-))
+
+	 (define (eval-minus exp env)
+	   (display "eval-minus?\n")
+	   (- (eval-exp (cadr exp) env) 
+	      (eval-exp (caddr exp) env)))
+
 	 (define (function-call-list? exp)
-	   (display "function-call-list?")
+	   (display "function-call-list?\n")
 	   (closure? (eval-symbol (car exp) *env*)))
 
 	 (define (eval-function-call-list exp env)
