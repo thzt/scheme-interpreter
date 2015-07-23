@@ -3,13 +3,13 @@
 	 (import (rnrs))
 
 	 ;export
-	 (define (handle-case case-list exp)
+	 (define (handle-case case-list exp env)
 	   (if (null? case-list)
 	       (error 'handle-case "all predicator return false.")
 	       (let* ((head (car case-list))
 		      (predicate (car head))
 		      (handler (cdr head)))
 		 (if (predicate exp)
-		     (handler exp)
-		     (handle-case (cdr case-list) exp)))))
+		     (handler exp env)
+		     (handle-case (cdr case-list) exp env)))))
 )
