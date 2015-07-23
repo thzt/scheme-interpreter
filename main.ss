@@ -3,8 +3,15 @@
 ;(eval '(if #t 1 2))
 ;(display (eval 'id *env*))
 
-(eval-exp '(define add (lambda (x y) (+ x y))) *env*)
-(eval-exp '(define minus (lambda (x y) (- x y))) *env*)
-(display (eval-exp '(minus 3 (add 1 2)) *env*))
+(eval-exp '(define add 
+	     (lambda (x)
+	       (lambda (y) (+ x y))))
+	  *env*)
+
+(eval-exp '(define add1 (add 1))
+	  *env*)
+
+(display (eval-exp '(add1 2)
+	  *env*))
 
 ;(display (get-symbol-value-from-env *env* '+))
