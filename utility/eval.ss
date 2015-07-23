@@ -108,7 +108,10 @@
 	 (define (eval-function-call-list exp env)
 	   (display "eval-function-call-list\n")
 	   (let* ((function-name (car exp))
-		  (function-args (cdr exp))
+		  (function-args (map 
+				  (lambda(arg) 
+				    (eval-exp arg env))
+				  (cdr exp)))
 
 		  (closure (eval-symbol function-name env))
 		  (function-body (closure-body closure))
