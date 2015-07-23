@@ -30,9 +30,11 @@
 	   (get-symbol-value-from-env env exp))
 
 	 (define (self-eval-exp? exp)
+	   (display "self-eval-exp?\n")
 	   (or (number? exp) (boolean? exp)))
 
 	 (define (eval-self-eval-exp exp env)
+	   (display "eval-self-eval-exp\n")
 	   exp)
 
 	 (define (is-list? exp)
@@ -48,6 +50,7 @@
 	   (eq? (car exp) 'if))
 
 	 (define (eval-if exp env)
+	   (display "eval-if\n")
 	   (if (eval-exp (cadr exp) env)
 	       (eval-exp (caddr exp) env)
 	       (eval-exp (cadddr exp) env)))
@@ -61,10 +64,12 @@
 	   (extend-env *env* (cadr exp) (eval-exp (caddr exp) env)))
 
 	 (define (set!? exp)
+	   (display "set!?\n")
 	   (eq? (car exp) 'set!))
 
-	 (define eval-set!
-	   eval-define)
+	 (define (eval-set! exp env)
+	   (display "eval-set!\n")
+	   (eval-define exp env))
 
 	 (define (lambda? exp)
 	   (display "lambda?\n")
@@ -77,6 +82,7 @@
 	     (make-closure params body env)))
 
 	 (define (function-call-list? exp)
+	   (display "function-call-list?")
 	   (closure? (eval-symbol (car exp) *env*)))
 
 	 (define (eval-function-call-list exp env)
