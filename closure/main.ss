@@ -17,3 +17,13 @@
 			2))
 		     1) 
 		   *env*))
+
+(display "\n\n")
+(display (eval-exp '((lambda (x)
+		       ((lambda (f)
+			  ((lambda (x)
+			     (f 3))
+			   2))
+			(lambda (z) x)))
+		     1)
+		   *env*))
