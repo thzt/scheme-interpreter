@@ -4,7 +4,7 @@ How to interpret the scheme language ?
 
 Ways are introduced by many books.
 
-But they all too tedious.
+However, they are all very tedious.
 
 As the scheme language insist a philosophy of conciseness,
 
@@ -12,15 +12,15 @@ I decide to write an interpreter as brief as possible.
 
 ## Orthogonality
 
-Many feature in the scheme lanauge are orthogonal.
+Many features in the scheme language are orthogonal.
 
-They can be implemented independently.
+They can be implemented independently, 
 
-For example, continuation and hygienic-macro.
+such as, the continuation and the hygienic macro.
 
 To avoid to implement them in a whole interpreter,
 
-helps us to minimize the code.
+I minimize the code.
 
 ## Reference
 
