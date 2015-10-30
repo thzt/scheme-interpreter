@@ -28,6 +28,6 @@ There is a process of thinking to create them,
 
 I also write Chinese blog to explain it.
 
-[词法作用域是怎样实现的](https://thzt.github.io/lisp/2015/08/15/implementation-of-lexical-scope/)
+[词法作用域是怎样实现的](http://thzt.github.io/implementation-of-lexical-scope/)
 
-[call/cc是怎样实现的](https://thzt.github.io/lisp/2015/08/20/implementation-of-callcc/)
+[call/cc是怎样实现的](http://thzt.github.io/implementation-of-callcc/)
